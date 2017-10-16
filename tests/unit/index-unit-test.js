@@ -29,7 +29,7 @@ describe('Index unit tests', function () {
         getParametersStub.yields(null, { Parameters: [{ Name: 'foo', Value: 'bar' }, { Name: 'baz', Value: 'buz' }] });
 
         event = {
-            ResourceProperties: { Names: ['foo, baz'] }
+            ResourceProperties: { Names: ['foo', 'baz'] }
         };
     });
     after(function () {
@@ -62,6 +62,22 @@ describe('Index unit tests', function () {
 
     describe('create', function () {
         it('should succeed', function (done) {
+            subject.create(event, {}, function (error, response) {
+                expect(error).to.equal(null);
+                expect(response).to.be.an('object');
+                expect(response.foo).to.equal('bar');
+                expect(response.baz).to.equal('buz');
+                done();
+            });
+        });
+        it('should succeed with prefix', function (done) {
+            event = {
+                ResourceProperties: {
+                    Names: ['Test-foo', 'Test-baz'],
+                    Prefix: 'Test-'
+                }
+            };
+            getParametersStub.yields(null, { Parameters: [{ Name: 'Test-foo', Value: 'bar' }, { Name: 'Test-baz', Value: 'buz' }] });
             subject.create(event, {}, function (error, response) {
                 expect(error).to.equal(null);
                 expect(response).to.be.an('object');

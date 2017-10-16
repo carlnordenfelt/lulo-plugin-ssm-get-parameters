@@ -25,7 +25,11 @@ pub.create = function (event, _context, callback) {
 
         var data = {};
         response.Parameters.forEach(function (parameter) {
-            data[parameter.Name] = parameter.Value;
+            var parameterName = parameter.Name;
+            if (event.ResourceProperties.Prefix) {
+                parameterName = parameterName.replace(event.ResourceProperties.Prefix, '');
+            }
+            data[parameterName] = parameter.Value;
         });
         return callback(null, data);
     });
