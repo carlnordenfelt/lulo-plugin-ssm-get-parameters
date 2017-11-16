@@ -11,7 +11,8 @@ npm install lulo-plugin-ssm-get-parameters --save
 
 ## Usage
 ### Properties
-* Names: An array of parameter names to fetch.
+* Names: An array of parameter names to fetch. Required.
+* Prefix: A prefix which will be stripped from each ParameterName before responding. Optional.
 
 ### Return Values
 The parameter values can be accessed via Fn::GetAtt for each valid Parameter Name:
