@@ -1,13 +1,11 @@
-'use strict';
-
-var expect = require('chai').expect;
-var mockery = require('mockery');
-var sinon = require('sinon');
+const expect  = require('chai').expect;
+const mockery = require('mockery');
+const sinon   = require('sinon');
 
 describe('Index unit tests', function () {
-    var subject;
-    var getParametersStub = sinon.stub();
-    var event;
+    let subject;
+    const getParametersStub = sinon.stub();
+    let event;
 
     before(function () {
         mockery.enable({
@@ -15,7 +13,7 @@ describe('Index unit tests', function () {
             warnOnUnregistered: false
         });
 
-        var awsSdkStub = {
+        const awsSdkStub = {
             SSM: function () {
                 this.getParameters = getParametersStub;
             }
@@ -25,11 +23,21 @@ describe('Index unit tests', function () {
         subject = require('../../src/index');
     });
     beforeEach(function () {
-        getParametersStub.reset().resetBehavior();
-        getParametersStub.yields(null, { Parameters: [{ Name: 'foo', Value: 'bar' }, { Name: 'baz', Value: 'buz' }] });
+        getParametersStub.reset();
+        getParametersStub.yields(null, {
+            Parameters: [
+                { Name: '/foo/path', Value: 'foo-value' },
+                { Name: '/bar/path', Value: 'bar-value' }
+            ]
+        });
 
         event = {
-            ResourceProperties: { Names: ['foo', 'baz'] }
+            ResourceProperties: {
+                Parameters: [
+                    ['FooName', '/foo/path'],
+                    ['BarName', '/bar/path']
+                ]
+            }
         };
     });
     after(function () {
@@ -42,20 +50,24 @@ describe('Index unit tests', function () {
             subject.validate(event);
             done();
         });
-        it('should fail if Names is not set', function (done) {
-            delete event.ResourceProperties.Names;
-            function fn () {
+        it('should fail if Parameters is not set', function (done) {
+            delete event.ResourceProperties.Parameters;
+
+            function fn() {
                 subject.validate(event);
             }
-            expect(fn).to.throw(/Missing required property Names/);
+
+            expect(fn).to.throw(/Missing required property Parameters/);
             done();
         });
-        it('should fail if Names is not an array', function (done) {
-            event.ResourceProperties.Names = 'non-array';
-            function fn () {
+        it('should fail if Parameters is not an array', function (done) {
+            event.ResourceProperties.Parameters = 'non-array';
+
+            function fn() {
                 subject.validate(event);
             }
-            expect(fn).to.throw(/Property Names must be an array/);
+
+            expect(fn).to.throw(/Property Parameters must be an array/);
             done();
         });
     });
@@ -65,24 +77,9 @@ describe('Index unit tests', function () {
             subject.create(event, {}, function (error, response) {
                 expect(error).to.equal(null);
                 expect(response).to.be.an('object');
-                expect(response.foo).to.equal('bar');
-                expect(response.baz).to.equal('buz');
-                done();
-            });
-        });
-        it('should succeed with prefix', function (done) {
-            event = {
-                ResourceProperties: {
-                    Names: ['Test-foo', 'Test-baz'],
-                    Prefix: 'Test-'
-                }
-            };
-            getParametersStub.yields(null, { Parameters: [{ Name: 'Test-foo', Value: 'bar' }, { Name: 'Test-baz', Value: 'buz' }] });
-            subject.create(event, {}, function (error, response) {
-                expect(error).to.equal(null);
-                expect(response).to.be.an('object');
-                expect(response.foo).to.equal('bar');
-                expect(response.baz).to.equal('buz');
+                expect(response.FooName).to.equal('foo-value');
+                expect(response.BarName).to.equal('bar-value');
+                expect(getParametersStub.calledOnce).to.equal(true);
                 done();
             });
         });
@@ -91,6 +88,7 @@ describe('Index unit tests', function () {
             subject.create(event, {}, function (error, response) {
                 expect(error).to.equal('putParametersStub');
                 expect(response).to.equal(undefined);
+                expect(getParametersStub.calledOnce).to.equal(true);
                 done();
             });
         });
@@ -101,6 +99,7 @@ describe('Index unit tests', function () {
             subject.update(event, {}, function (error, response) {
                 expect(error).to.equal(null);
                 expect(response).to.be.an('object');
+                expect(getParametersStub.calledOnce).to.equal(true);
                 done();
             });
         });
@@ -111,6 +110,7 @@ describe('Index unit tests', function () {
             subject.delete(event, {}, function (error, response) {
                 expect(error).to.equal(undefined);
                 expect(response).to.equal(undefined);
+                expect(getParametersStub.called).to.equal(false);
                 done();
             });
         });

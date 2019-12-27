@@ -1,46 +1,50 @@
-'use strict';
+const aws = require('aws-sdk');
+const ssm = new aws.SSM({ apiVersion: '2014-11-06' });
 
-var aws = require('aws-sdk');
-var ssm = new aws.SSM({ apiVersion: '2014-11-06' });
-var pub = {};
-
-pub.validate = function (event) {
-    if (!event.ResourceProperties.Names) {
-        throw new Error('Missing required property Names');
-    }
-    if (!Array.isArray(event.ResourceProperties.Names)) {
-        throw new Error('Property Names must be an array');
-    }
+module.exports = {
+    validate,
+    create,
+    update,
+    delete: _delete
 };
 
-pub.create = function (event, _context, callback) {
-    var params = {
-        Names: event.ResourceProperties.Names,
+function validate(event) {
+    if (!event.ResourceProperties.Parameters) {
+        throw new Error('Missing required property Parameters');
+    }
+    if (!Array.isArray(event.ResourceProperties.Parameters)) {
+        throw new Error('Property Parameters must be an array');
+    }
+}
+
+function create(event, _context, callback) {
+    const map = new Map();
+    for (const [getAttName, paramPath] of event.ResourceProperties.Parameters) {
+        map.set(paramPath, getAttName);
+    }
+
+    const params = {
+        Names: Array.from(map.keys()),
         WithDecryption: true
     };
+
     ssm.getParameters(params, function (error, response) {
         if (error) {
             return callback(error);
         }
 
-        var data = {};
+        const data = {};
         response.Parameters.forEach(function (parameter) {
-            var parameterName = parameter.Name;
-            if (event.ResourceProperties.Prefix) {
-                parameterName = parameterName.replace(event.ResourceProperties.Prefix, '');
-            }
-            data[parameterName] = parameter.Value;
+            data[map.get(parameter.Name)] = parameter.Value;
         });
         return callback(null, data);
     });
-};
+}
 
-pub.update = function (event, context, callback) {
-    return pub.create(event, context, callback);
-};
+function update(event, context, callback) {
+    return create(event, context, callback);
+}
 
-pub.delete = function (_event, _context, callback) {
+function _delete(_event, _context, callback) {
     setImmediate(callback);
-};
-
-module.exports = pub;
+}

@@ -1,3 +1,9 @@
+## 2.0.0
+* Breaking changes: 
+    * Renamed Names to Parameters
+    * Parameters are now Arrays where 0 = Key and 1 = Value, see readme for details.
+    * Prefix has been removed
+
 ## 1.1.1
 * Updated readme
 
