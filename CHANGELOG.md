@@ -1,3 +1,6 @@
+## 2.0.1
+* Now supports more than 10 parameters at a time
+
 ## 2.0.0
 * Breaking changes: 
     * Renamed Names to Parameters
